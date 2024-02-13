@@ -185,10 +185,19 @@
   (reset)
   (run-2 0 50000000))
 
-(run2)
+;;(run2)
 
 
 #|
+
+(run)
+
+... 456 242 32 (2017) 1971 178 ...
+
+1971 accepted answer .
+
+
+------ part 2 ---- huh ??
 
 when is 303 a multiple of size of length of list ?
 is this even the correct wording ??
