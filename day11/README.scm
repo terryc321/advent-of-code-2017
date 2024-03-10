@@ -1,6 +1,4 @@
 
-
-
 #|
 producing a visual hexagonal grid is a bit confusing
 
@@ -54,10 +52,15 @@ really need some basic language packages where pi is defined
 	    (+ (pos-y p)(pos-y p2))))
 
 
-(define radius 5)
+(define radius 10)
 (define origin (make-pos 20 20))
 (define start (make-pos 20 20))
 (define finish (make-pos 20 20))
+
+
+(define *width* 0)
+(define *height* 0)
+
 
 (define hex-array #f)
 
@@ -88,6 +91,23 @@ really need some basic language packages where pi is defined
   )
   
   
+(define (ten-thousand n)
+  (cond
+   ((integer? n) (ten-thousand (format #f "~a" n)))
+   ((and (string? n) (= (string-length n) 1)) (string-append "0000" n))
+   ((and (string? n) (= (string-length n) 2)) (string-append "000" n))
+   ((and (string? n) (= (string-length n) 3)) (string-append "00" n))
+   ((and (string? n) (= (string-length n) 4)) (string-append "0" n))
+   ((and (string? n) (= (string-length n) 5)) (string-append "" n))
+   (#t (error "ten-thousand"))))
+   
+
+(define (in-vicinity p p2 range)  
+  (let* ((dx (- (pos-x p) (pos-x p2)))
+	 (dy (- (pos-y p) (pos-y p2)))
+	 (dist (sqrt (+ (* dx dx) (* dy dy)))))
+    (< dist range)))
+
 
 
 ;; south , negative y direction, x same vertical alignment,
@@ -164,10 +184,8 @@ really need some basic language packages where pi is defined
 
 
 (define (draw-point p)
-  (pos-max-min p)  
-  (format #t "~a,~a ~%"
-	  (+ adj-x (pos-x p))
-	  (+ adj-y (pos-y p))))
+  (format #t "~a,~a ~%" (pos-x p) (pos-y p)))
+
 
 
 (define (draw-line p p2)
@@ -178,14 +196,21 @@ really need some basic language packages where pi is defined
 
 ;; may not know on first pass what the lows and highs of the x and y directions are , so
 ;; just default to 1000 by 1000 
-(define (svg-header)                                   ;;adj-x adj-y
-  (let ((width (cond ((and lo-x hi-x) (+ (* 2 radius) (+ (- hi-x lo-x)))) (#t 1000)))
-	(height (cond ((and lo-y hi-y) (+ (* 2 radius) (+ (- hi-y lo-y)))) (#t 1000))))
+(define (svg-header width height)                                   ;;adj-x adj-y
     (format #t "<svg width=\"~a\" height=\"~a\" xmlns=\"http://www.w3.org/2000/svg\">~%"
 	    width
 	    height)
-    (format #t "<rect width=\"100%\" height=\"100%\" fill=\"black\"\/>~%")
-    ))
+    ;;(format #t "<rect width=\"100%\" height=\"100%\" fill=\"black\"\/>~%")
+    (format #t "
+    <style>
+    .small {
+      font: italic 13px sans-serif;
+    }
+    .heavy {
+      font: bold 30px sans-serif;
+    }
+    </style> ~%"))
+
 
 
 
@@ -194,6 +219,7 @@ really need some basic language packages where pi is defined
 	  (+ adj-x (pos-x origin))
 	  (+ adj-y (pos-y origin))
 	  radius))
+
 
 (define (svg-finish-position)
   (format #t "<circle cx=\"~a\" cy=\"~a\" r=\"~a\" stroke=\"orange\" stroke-width=\"1\" fill=\"red\" />~%"
@@ -208,6 +234,13 @@ really need some basic language packages where pi is defined
 
 (define (svg-footer)
   (format #t "</svg>~%"))
+
+
+(define (svg-text s)
+  ;;(format #t "<text x=\"20\" y=\"35\" class=\"small\">~a</text>~%" s)
+  (format #t "<text x=\"20\" y=\"500\" class=\"heavy\">~a</text>~%" s)
+  )
+
 
  
 #|
@@ -248,6 +281,176 @@ really need some basic language packages where pi is defined
 			;;(draw-hex (north-east (north-east (north-east (north-east (north-east (north-east (south-east origin))))))) 'on)
 			
 |#
+
+(define flat-array (make-vector (+ 1 (length *path*)) #f))
+
+(define (flat)
+  (letrec ((iter (lambda (xs pos n)		    
+		   ;; record position in flat array
+		   (vector-set! flat-array n pos)
+		   (cond
+		    ((null? xs) #t)
+		    (#t (let ((op (car xs))
+			      (next-pos '()))
+			  (cond
+			   ((eq? op 'n) (set! next-pos (north pos)))
+			   ((eq? op 'ne) (set! next-pos (north-east pos)))
+			   ((eq? op 'nw) (set! next-pos (north-west pos)))
+			   ((eq? op 's) (set! next-pos (south pos)))
+			   ((eq? op 'se) (set! next-pos (south-east pos)))
+			   ((eq? op 'sw) (set! next-pos (south-west pos)))
+			   (#t (error "test bad direction")))
+			  (iter (cdr xs) next-pos (+ n 1))))))))
+    (iter *path* origin 0)
+    ))
+
+(define (uniform)
+  ;; run the *path* from start to finish on hexagon
+  ;; use some trig to work out where centres end up
+  (flat)
+  ;; adjust these centres so SVG can display them > 0 x and y coords 
+  (let ((len (vector-length flat-array))
+	(lo-x 0)
+	(lo-y 0)
+	(hi-x 0)
+	(hi-y 0)
+	(adj-x 0)
+	(adj-y 0)
+	(width 0)
+	(height 0))
+    (do-for (i 0 len)
+	    (let* ((pos (vector-ref flat-array i))
+		   (x (pos-x pos))
+		   (y (pos-y pos)))
+	      (when (< x lo-x) (set! lo-x x))
+	      (when (< y lo-y) (set! lo-y y))
+	      (when (> x hi-x) (set! hi-x x))
+	      (when (> y hi-y) (set! hi-y y))))
+    (when (< lo-x 0) (set! adj-x (- lo-x)))
+    (when (< lo-y 0) (set! adj-y (- lo-y)))    
+    (do-for (i 0 len)
+	    (let* ((pos (vector-ref flat-array i))
+		   (x (+ adj-x (pos-x pos)))
+		   (y (+ adj-y (pos-y pos))))
+	      (vector-set! flat-array i (make-pos x y))))
+    (set! *width*  (+ (* 2 radius) (- hi-x lo-x)))
+    (set! *height* (+ (* 2 radius) (- hi-y lo-y)))
+    (format #t "global image width ~a , height ~a ~%" *width* *height*)))
+
+;; check output to a file 
+(define (output-1)
+  (with-output-to-file "svg-1.svg" (lambda ()
+				     (svg-header *width* *height*)
+				     (let ((len (vector-length flat-array)))
+				       (do-for (i 0 len)
+					       (let* ((pos (vector-ref flat-array i)))
+						 (draw-hex pos 'on))))
+				     (svg-footer)
+				     )))
+
+
+;; check output to a file - zoomed in 
+(define (zoom-1 n)
+  (let ((filename (format #f  "zoom/zoom-~a.svg" (ten-thousand n))))
+    (format #t "generating file [~a]~%" filename)
+    (with-output-to-file filename
+      (lambda ()
+	(let* ((w (* 2 radius 30))
+	       (h (* 2 radius 30))
+	       (range (* radius 60))
+	       (ref (vector-ref flat-array n )))
+	  (svg-header w h)
+	  (let ((len (vector-length flat-array)))
+	    (do-for (i 0 len)
+		    (let* ((pos (vector-ref flat-array i)))
+		      (cond
+		       ((in-vicinity ref pos range)
+			(let* ((local-x (- (pos-x ref) (/ w 2)))
+			       (local-y (- (pos-y ref) (/ h 2)))
+			       (x (pos-x pos))
+			       (y (pos-y pos))
+			       (new-pos (make-pos (- x local-x)
+						  (- y local-y))))
+			  ;; (format #t "local x y : ~a ~a ~%"
+			  ;; 	local-x local-y)
+			  ;; (format #t "ref x y : ~a ~a ~%"
+			  ;; 	x y)
+			  ;; (format #t "new pos ~a ~%" new-pos)
+			  (cond
+			   ((< i n) (draw-hex new-pos 'on))
+			   ((= i n) (draw-hex new-pos 'pink))
+			   (#t (draw-hex new-pos 'off)))))))))
+	  (svg-footer)
+	  ))
+      )))
+
+
+
+;; like zoom-1 but tries to follow " region of hexagon space "
+;; rather than track centre hexagon 
+(define (zoom-2 n)
+  (let ((filename (format #f  "zoom/zoom-~a.svg" (ten-thousand n))))
+    (format #t "generating file [~a]~%" filename)
+    (with-output-to-file filename
+      (lambda ()
+	(let* ((w (* 2 radius 30))
+	       (h (* 2 radius 30))
+	       (range (* radius 60))
+	       (ref (vector-ref flat-array n )))
+	  (svg-header w h)
+	  (let ((len (vector-length flat-array)))
+	    (do-for (i 0 len)
+		    (let* ((pos (vector-ref flat-array i)))
+		      (cond
+		       ((in-vicinity ref pos range)
+			(let* ((local-x (- (pos-x ref) (/ w 2)))
+			       (local-y (- (pos-y ref) (/ h 2)))
+			       (x (pos-x pos))
+			       (y (pos-y pos))
+			       (new-pos (make-pos (- x local-x)
+						  (- y local-y))))
+			  ;; (format #t "local x y : ~a ~a ~%"
+			  ;; 	local-x local-y)
+			  ;; (format #t "ref x y : ~a ~a ~%"
+			  ;; 	x y)
+			  ;; (format #t "new pos ~a ~%" new-pos)
+			  (cond
+			   ((< i n) (draw-hex new-pos 'on))
+			   ((= i n) (draw-hex new-pos 'pink))
+			   (#t (draw-hex new-pos 'off)))))))))
+	  (svg-text "hello world")
+	  (svg-footer)
+	  ))
+      )))
+
+
+
+
+
+(define (zooms)
+  (let ((len (vector-length flat-array)))  
+    (do-for (i 0 len)
+	    (zoom-2 i))))
+
+
+(define (run)
+  (flat)
+  (uniform)
+  (output-1)
+  (zooms))
+
+
+
+
+
+
+
+
+
+	      
+	      
+#|	      
+
 
 ;;(change-directory "day11")
 (define (test)
@@ -331,22 +534,6 @@ really need some basic language packages where pi is defined
 		       (exit (- i 1)))
 		     i))))
 
-(define (ten-thousand n)
-  (cond
-   ((integer? n) (ten-thousand (format #f "~a" n)))
-   ((and (string? n) (= (string-length n) 1)) (string-append "0000" n))
-   ((and (string? n) (= (string-length n) 2)) (string-append "000" n))
-   ((and (string? n) (= (string-length n) 3)) (string-append "00" n))
-   ((and (string? n) (= (string-length n) 4)) (string-append "0" n))
-   ((and (string? n) (= (string-length n) 5)) (string-append "" n))
-   (#t (error "ten-thousand"))))
-   
-
-(define (in-vicinity p p2)  
-  (let* ((dx (- (pos-x p) (pos-x p2)))
-	 (dy (- (pos-y p) (pos-y p2)))
-	 (dist (sqrt (+ (* dx dx) (* dy dy)))))
-    (< dist (* radius 30))))
 
 
 
@@ -367,9 +554,9 @@ really need some basic language packages where pi is defined
 		     ;; iter loop
 		     (let ((pos (vector-ref hex-array n)))
 		     (cond
-		      ((and (< n at) (in-vicinity pos target))
+		      ((and (< n at) (in-vicinity pos target ???))
 		       (draw-hex pos 'on))
-		      ((and (= n at) (in-vicinity pos target))
+		      ((and (= n at) (in-vicinity pos target ???))
 		       (draw-hex pos 'pink))
 		      ((in-vicinity pos target)
 		       (draw-hex pos 'off)
@@ -390,7 +577,7 @@ really need some basic language packages where pi is defined
 		    (svg-footer)
 		    ))))))))
 
-
+|#
 
 
 
