@@ -17,6 +17,8 @@ really need some basic language packages where pi is defined
 ;; (define (tag x y) (cons y x))
 ;; (define (tag-type x) (car x))
 
+;;(change-directory "day11")
+
 ;; chicken scheme pre-amble - probably do not half of this cruft 
 (import scheme)
 (import simple-exceptions)
@@ -37,6 +39,8 @@ really need some basic language packages where pi is defined
 (import sequences)
 (import srfi-1)
 (import matchable)
+(import shell)
+
 
 (define pi 3.1415926535898)
 
@@ -200,14 +204,16 @@ really need some basic language packages where pi is defined
     (format #t "<svg width=\"~a\" height=\"~a\" xmlns=\"http://www.w3.org/2000/svg\">~%"
 	    width
 	    height)
-    ;;(format #t "<rect width=\"100%\" height=\"100%\" fill=\"black\"\/>~%")
+    (format #t "<rect width=\"100%\" height=\"100%\" fill=\"black\"/>~%")
     (format #t "
     <style>
     .small {
       font: italic 13px sans-serif;
+      fill: yellow;
     }
     .heavy {
-      font: bold 30px sans-serif;
+      font: bold 50px sans-serif;
+      fill: yellow;
     }
     </style> ~%"))
 
@@ -238,7 +244,9 @@ really need some basic language packages where pi is defined
 
 (define (svg-text s)
   ;;(format #t "<text x=\"20\" y=\"35\" class=\"small\">~a</text>~%" s)
-  (format #t "<text x=\"20\" y=\"500\" class=\"heavy\">~a</text>~%" s)
+  ;;(format #t "<text x=\"20\" y=\"500\" class=\"heavy\">~a</text>~%" s)
+  ;;(format #t "<text x=\"20\" y=\"500\" >~a</text>~%" s)
+  #t
   )
 
 
@@ -418,7 +426,17 @@ really need some basic language packages where pi is defined
 			   ((< i n) (draw-hex new-pos 'on))
 			   ((= i n) (draw-hex new-pos 'pink))
 			   (#t (draw-hex new-pos 'off)))))))))
-	  (svg-text "hello world")
+
+	  (cond
+	   ((> n 0)  (svg-text (format #f "N ~a PATH ~a [~a] ~a"
+				       n
+				       (list-ref *path* (- n 1))
+				       (list-ref *path* n)
+				       (list-ref *path* (+ n 1)))))
+	   (#t (svg-text (format #f "N~a : PATH - [~a] ~a"
+				 n
+				 (list-ref *path* n)
+				 (list-ref *path* (+ n 1))))))	  
 	  (svg-footer)
 	  ))
       )))
@@ -433,12 +451,27 @@ really need some basic language packages where pi is defined
 	    (zoom-2 i))))
 
 
-(define (run)
+(define (solve)
   (flat)
   (uniform)
   (output-1)
   (zooms))
 
+(define (convert)
+  (let ((len (vector-length flat-array)))  
+    (do-for (n 0 len)
+	    (let ((src (format #f  "zoom/zoom-~a.svg" (ten-thousand n)))
+		  (dest (format #f  "zoom/zoom-~a.png" (ten-thousand n))))
+	      (format #t "converting ~a to ~a ~%" src dest)
+	      (run (convert ,src ,dest)) 
+	      ))))
+
+
+
+  ;; -----------
+
+  (solve)
+  (convert)
 
 
 
@@ -578,6 +611,7 @@ really need some basic language packages where pi is defined
 		    ))))))))
 
 |#
+
 
 
 
