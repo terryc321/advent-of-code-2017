@@ -1,0 +1,10 @@
+
+tried to generate 8223 hexagons in svg - works for okay as long as size of the hexagon is not too big
+
+set pixel radius to 100 - crashes eye of gnome svg viewer
+set pixel radius to 10 - think it works
+
+just make out hexagon shape if zoom into svg
+
+use SDL graphics library
+
