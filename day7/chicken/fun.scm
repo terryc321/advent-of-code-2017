@@ -12,6 +12,7 @@ solution missing from github
 (import scheme)
 (import simple-exceptions)
 (import expand-full)
+(import shell)
 
 (import (chicken bitwise)) ;; --- bit operations
 
@@ -1109,7 +1110,7 @@ solution missing from github
 (uafhv (223)   azmneyd mmpnppi)
 (aocfuj (91))
 (kaghlc (34))
-(eionkb (1079)   hxmcaoy sybpg jfhqrla)
+(eionkb (1079)   hxmcaoy sybpg jfhqrla) ;; <<< eionkb 1079 is 7 too many , should be 1072 
 (hzhcl (127)   vgegr lklqxg)
 (ssnhc (84))
 (ttfyrk (2158)   xnxsdq ffgzg tvrxaw)
@@ -1403,32 +1404,298 @@ solution missing from github
 (swnafht (44)   lbxdtms jensj zkpfzio jobwpao jxfimbl)
 ))
 
-(define (find-root s xs)
-  (format #t "finding root of [~a]~%" s)
-  (define (recur ys)
-    (cond
-     ((null? ys) s)
-     (#t (let ((entry (car ys)))
-	   (cond
-	    ((and (> (length entry) 2) (member s (cddr entry)))
-	     (find-root (car entry) xs))
-	    (#t (recur (cdr ys))))))))
-  (recur xs))
+
+
+
+;; #|
+
+;; (part-a)
+
+;; finding root of [ilhib]
+;; finding root of [vmeubf]
+;; finding root of [locrtxl]
+;; finding root of [lsire]
+;; finding root of [wiapj]
+;; wiapj
+;; |#
+
+;; (define find-children
+;;   (lambda (xs)
+;;     (lambda (s)
+;;       (define (recur ys)
+;; 	(cond
+;; 	 ((null? ys) s)
+;; 	 (#t (let ((entry (car ys)))
+;; 	       (cond
+;; 		((and (> (length entry) 2) (eq? s (car entry)))
+;; 		 (cddr entry))
+;; 		(#t (recur (cdr ys))))))))
+;;       (recur xs))))
+
+
+;; (define find-weight
+;;   (lambda (xs)
+;;     (lambda (s)
+;;       (define (recur ys)
+;; 	(cond
+;; 	 ((null? ys) (error "find-weight" (list s)))
+;; 	 (#t (let ((entry (car ys)))
+;; 	       (cond
+;; 		((eq? s (car entry))
+;; 		 (cadr entry))
+;; 		(#t (recur (cdr ys))))))))
+;;       (recur xs))))
+
+
+
+;; (define demo
+;;   (lambda ()
+;;     (letrec ((fw (find-weight (input))))
+;;       (map (lambda (w) (list w (fw w))) (map car (input))))))
+
+;; (define demo2
+;;   (lambda ()
+;;     (let* ((data (input))
+;; 	   (sym (first (first data))))      
+;;       ((find-root data) sym))))
+
+
+
+(define *data* (input))
+;;(define *data* (example))
+
+
+(define find-root
+  (lambda (s)
+    ;;(format #t "finding root of [~a]~%" s)
+    (define (recur ys)
+      (cond
+       ((null? ys) s)
+       (#t (let ((entry (car ys)))
+	     (cond
+	      ((and (> (length entry) 2) (member s (cddr entry)))
+	       (find-root (car entry)))
+	      (#t (recur (cdr ys))))))))
+    (recur *data*)))
+
 
 (define (part-a)
-  (find-root 'ilhib (input)))
+  (find-root (caar *data*)))
+
+
+(define find-children
+  (lambda (s)
+    (define (recur ys)
+      (cond
+       ((null? ys) '())
+       (#t (let ((entry (car ys)))
+	     (cond
+	      ((and (> (length entry) 2) (eq? s (car entry)))
+	       (cddr entry))
+	      (#t (recur (cdr ys))))))))
+    (recur *data*)))
+
+(define find-weight
+  (lambda (s)
+    (define (recur ys)
+      (cond
+       ((null? ys) (error "find-weight" (list s)))
+       (#t (let ((entry (car ys)))
+	     (cond
+	      ((eq? s (car entry))
+	       (car (cadr entry)))
+	      (#t (recur (cdr ys))))))))
+    (recur *data*)))
+
+(define find-combined-weight
+  (lambda (s)
+    ;;(format #t "combined weight given symbol ~a ~%" s)
+    (let ((children (find-children s)))
+      ;;(format #t "combined-weight children = ~a ~%" children)
+      (cond
+       ((null? children) (find-weight s))
+       (#t       (+ (find-weight s)
+		    (apply + 
+			   (map find-combined-weight children))))))))
+
+
+
+
+
+(define (test1)
+  (format #t "digraph {~%")
+  (let ((all-symbols (map car *data*)))
+    (let ((oc (map (lambda (s) (list s 'orignal= (find-weight s)
+				     'combined= (find-combined-weight s)))
+		   all-symbols)))
+      (do-list (soc oc)
+	       (let ((sym (first soc))
+		     (weight (third soc))
+		     (combined (fifth soc)))
+		 (format #t "\"~a\" [label=\"~a:~a:~a\"]~%" sym sym weight combined)))
+      (do-list (s all-symbols)
+	       (let ((parent s)
+		     (children (find-children s)))
+		 ;;(format #t "children => [~a] ~%" children)
+		 (cond
+		  ((null? children) #f)
+		  (#t
+		   (do-list (child children)
+			    ;;(format #t "child => [~a]~%" child)
+			    (format #t "\"~a\"->\"~a\"~%" parent child))))))))
+  (format #t "}~%~%"))
+
+
+
+
+(define (test2)
+  (format #t "import graphviz~%")
+  (format #t "f = graphviz.Digraph('aoc 2017', filename='graph.ps', engine='sfdp')~%")
+  (format #t "f.attr(rankdir='LR', size='8,5')~%")
+
+  (let ((all-symbols (map car *data*)))
+    (let ((oc (map (lambda (s) (list s 'orignal= (find-weight s)
+				     'combined= (find-combined-weight s)))
+		   all-symbols)))
+      (do-list (soc oc)
+	       (let ((sym (first soc))
+		     (weight (third soc))
+		     (combined (fifth soc)))
+		 ;;(format #t "\"~a\" [label=\"~a:~a:~a\"]~%" sym sym weight combined)
+		 ;;(format #t "f.node('~a' , label='~a:~a:~a')~%" sym sym weight combined)
+		 (format #t "f.node('~a')~%" sym) 
+		 ))
+      (do-list (s all-symbols)
+	       (let ((parent s)
+		     (children (find-children s)))
+		 ;;(format #t "children => [~a] ~%" children)
+		 (cond
+		  ((null? children) #f)
+		  (#t
+		   (do-list (child children)
+			    ;;(format #t "child => [~a]~%" child)
+			    ;;(format #t "\"~a\"->\"~a\"~%" parent child)
+			    (format #t "f.edge('~a','~a')~%" parent child)
+			    )))))))
+  (format #t "f.view()~%")
+  ;;(format #t "}~%~%")
+  )
+
+
+
+#|
+some sort of dot file 
+|#
+
+(define (test3)
+  ;; dot file intro 
+  (format #t "digraph \"test3\" ~%")
+  (format #t "{~%")
+    
+  (let ((all-symbols (map car *data*)))
+    (let ((oc (map (lambda (s) (list s 'orignal= (find-weight s)
+				     'combined= (find-combined-weight s)))
+		   all-symbols)))
+      (do-list (soc oc)
+	       (let ((sym (first soc))
+		     (weight (third soc))
+		     (combined (fifth soc)))
+		 ;;(format #t "\"~a\" [label=\"~a:~a:~a\"]~%" sym sym weight combined)
+		 ;;(format #t "f.node('~a' , label='~a:~a:~a')~%" sym sym weight combined)
+		 ;;(format #t "f.node('~a')~%" sym)
+		 (format #t "~a ; ~%" sym)		 
+		 ))
+      (do-list (s all-symbols)
+	       (let ((parent s)
+		     (children (find-children s)))
+		 ;;(format #t "children => [~a] ~%" children)
+		 (cond
+		  ((null? children) #f)
+		  (#t
+		   (do-list (child children)
+			    ;;(format #t "child => [~a]~%" child)
+			    ;;(format #t "\"~a\"->\"~a\"~%" parent child)
+			    ;;(format #t "f.edge('~a','~a')~%" parent child)
+			    (format #t "~a -> ~a ;~%" parent child)
+			    
+			    )))))))
+  ;;(format #t "f.view()~%")
+  ;;(format #t "}~%~%")
+
+  (format #t "}~%")
+  (format #t "~%")
+  
+  )
+
+
+
+(define (test4)
+  (with-output-to-file "graph.dot"
+    (lambda ()
+      (test3)))
+  ;; (run ("python3" "graph.py"))
+  ;; (run ("gv" "graph.ps"))
+  ;;(run ("dot" "-Tpng" "graph.dot" ">" "graph.png"))
+  (run ("dot" "-Tsvg" "graph.dot" ">" "graph.svg"))
+  )
+
+
+;; view generated svg in firefox - ok
+;; inkscape does not know size of image
+;; file:///home/terry/code/advent-of-code/advent-of-code-2017/day7/chicken/graph.svg
+
+;;dot  -Tpng thisfile > thisfile.png
+  
+#|
+
+#;2137> (pp (map (lambda (s) (list s (find-combined-weight s))) (find-children (part-a))))
+((djzjiwd 88556) (lsire 88563) (vlbivgc 88556) (xdctkbj 88556) (ygvpk 88556))
+
+#;2139> (pp (map (lambda (s) (list s (find-combined-weight s))) (find-children 'lsire)))
+((locrtxl 8957) (shlfz 8957) (ycpcv 8964))
+
+#;2145> (- 88563 88556)
+7
+lsire tower is 7 too many 
+
+#;2154> (pp (map (lambda (s) (list s (find-combined-weight s))) (find-children 'ycpcv)))
+((izdhn 1777) (yzhvrx 1777) (eionkb 1784) (eadvs 1777) (jkkqxfr 1777))
+
+#;2165> (pp (map (lambda (s) (list s (find-combined-weight s))) (find-children 'eionkb)))
+((hxmcaoy 235) (sybpg 235) (jfhqrla 235))
+
+#;2173> "eionkb is 7 too many"
+
+1784 is is the combined weight of all children and itself
+(- 1784 (* 3 235))  1079
+
+eionkb to balance tower is 1072
+
+
+#;2174> (pp (map (lambda (s) (list s (find-combined-weight s))) (find-children (part-a))))
+((djzjiwd 88556) (lsire 88556) (vlbivgc 88556) (xdctkbj 88556) (ygvpk 88556))
+#;2203>
+
+|#
 
 #|
 
-(part-a)
+http://magjac.com/graphviz-visual-editor/
 
-finding root of [ilhib]
-finding root of [vmeubf]
-finding root of [locrtxl]
-finding root of [lsire]
-finding root of [wiapj]
-wiapj
+digraph {
+  "a" [label="a:200"]
+  "b" [label="b:200"]
+  "a"->"b" [label="c:300"]
+}
+
 |#
+
+
+
+
+
+	 
+    
 
 
 
