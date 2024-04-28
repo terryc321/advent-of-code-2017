@@ -234,7 +234,6 @@ start of group {
 
 
 
-
 (define (puzzle)
   (run (get-input)))
 
