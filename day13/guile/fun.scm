@@ -3,7 +3,32 @@
 #|
 scanner puzzle
 
+depth 2
+1 2 1
+0 1 2
+anything mod 2 
+
+depth 3 
+1 2 3 2 1
+0 1 2 3 4 
+anything mod 4
+
+depth 4
+1 2 3 4 3 2 1
+0 1 2 3 4 5 6 
+mod 6
+
+depth 5
+1 2 3 4 5 4 3 2 1
+0 1 2 3 4 5 6 7 8
+mod 8
+
+hmmm , can we model this ?? tired.
+     
+
 |#
+
+
 
 (define input '(
 		(0  3)
@@ -210,6 +235,61 @@ side effect of moving each object one step
       cost)))
 
 
+
+(define (wait in w)
+  (let ((i -1)
+	(i-lim (find-last in))
+	(db (entries in))
+	(wait w))
+    (letrec ((foo (lambda (exit)
+		    (cond
+		     ((> wait 0) (set! wait (- wait 1)))
+		     (#t (set! i (+ i 1))))
+		    (cond
+		     ((null? db) 'done)
+		     (#t
+		      ;; check if we hit only if i >= 0
+		      (let* ((fn (car db))
+			     (n (fn 'val))
+			     (dep (fn 'depth)))
+
+			(when (>= i 0)		      
+			  (cond
+			   ((= n 1)
+			    (exit #f)
+			    ;;(format #t "caught at index ~a ~%" i)
+			    ;;(set! cost (+ cost (* i dep))))
+			    )
+			   (#t
+			    ;;(format #t "miss at index ~a ~%" i )
+			    )))
+			
+			(map (lambda (fn) (fn 'next)) db)
+			(set! db (cdr db))
+			(foo exit)))))))      
+      (call/cc (lambda (exit)
+		 (foo exit)
+		 )))))
+
+
+
+(define (solve-wait in)
+  (let ((n 0))
+    (letrec ((foo (lambda (exit)
+		    (let ((result (wait in n)))
+		      (when (eq? result 'done)
+			(exit n)))
+		    (set! n (+ n 1))
+		    (foo exit))))
+      (call/cc (lambda (exit)
+		 (foo exit))))))
+
+
+#|
+
+
+
+|#
 
 
 
