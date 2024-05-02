@@ -141,15 +141,17 @@ then keep repeating Y
 
 
 
-(define (make-fn k)
+(define (make-fn k x2)
   (cond
    ((< k 1) (lambda (op)
 	      (cond
 	       ((eq? op 'depth) 0)
+	       ((eq? op 'x) x2)	       
 	       (#t -1)))) ;; -1 we never reach here 
    ((= k 1) (lambda (op)
 	      (cond
 	       ((eq? op 'depth) 1)
+	       ((eq? op 'x) x2)	       
 	       (#t 1)))) ;; return constant values never next anyway
    (#t
     (let* ((X (cdr (iota (+ k 1))))
@@ -157,6 +159,7 @@ then keep repeating Y
 	   (xs Y))
       (lambda (op)
 	(cond
+	 ((eq? op 'x) x2)	       
 	 ((eq? op 'next)
 	  (let ((n (car xs)))
 	    (set! xs (cdr xs))
@@ -171,10 +174,9 @@ then keep repeating Y
 
 
 
-
-(define a (make-fn 1))
-(define b (make-fn 2))
-(define c (make-fn 3))
+(define a (make-fn 1 0))
+(define b (make-fn 2 0))
+(define c (make-fn 3 0))
 
 ;; input not defined for all values
 (define (find-last db)
@@ -183,8 +185,9 @@ then keep repeating Y
 
 (define (entries db)
   (let* ((n (find-last db))
-	 (sparse (iota (+ n 1))))
-    (letrec ((foo (lambda (xs ys zs)
+	 (sparse (iota (+ n 1)))
+	 (in 0))
+    (letrec ((foo (lambda (xs ys zs in)
 		    (cond
 		     ((null? xs) (reverse zs))
 		     (#t (let* ((ab (car ys))
@@ -194,12 +197,16 @@ then keep repeating Y
 			   ;;(format #t "x = ~a : ab = ~a ~%" x ab)
 			   (cond
 			    ((= x a) ;;(format #t "making proc depth ~a ~%" b)
-			     (foo (cdr xs)(cdr ys) (cons (make-fn b)
-							 zs)))
+			     (foo (cdr xs)(cdr ys) (cons (make-fn b in)
+							 zs)
+				  (+ in 1)))
 			    (#t
 			     ;;(format #t "making proc depth zero 0 ~%")
-			     (foo (cdr xs) ys (cons (make-fn 0) zs))))))))))
-      (foo sparse db '()))))
+			     (foo (cdr xs) ys (cons (make-fn 0 in) zs) (+ in 1))))))))))
+      (foo sparse db '() in))))
+
+
+
 
 #|
 ;; items with zero depth return -1 as height , we are only ever at height 1 so no collision occurs
@@ -285,30 +292,55 @@ side effect of moving each object one step
 		 (foo exit))))))
 
 
+;;(defmacro ...)
+(define-macro (repeat n . body)
+  (let ((foo (gensym "g")))  
+    `(letrec ((,foo (lambda (i)
+		    (cond
+		     ((> i 0) ,@body
+		      (,foo (- i 1)))
+		     (#t #f)))))
+       (,foo ,n))))
+
+(repeat 3 "hello world!")
+
+(macroexpand '(repeat 3 "hello world!"))
+
 #|
+
+at depth 3 , when does get caught ? 
+
 
 
 
 |#
 
+(define (for-depth n i w)
+  (let* ((i 0)
+	 (fn (make-fn n i))
+	 (x 0)
+	 (t 0))
+    (repeat w
+	    (let ((at (fn 'val)))
+	      (format #t "time ~a : at ~a : ~%" t at)	    
+	      (fn 'next)
+	      (set! x (+ x 1))
+	      (set! t (+ t 1))))
+	    	    
+    (repeat (* 3 n)
+	    (let ((dep (fn 'val)))
+	      (format #t "time ~a : x = ~a : fx ~a , ~a: " t x (fn 'x) dep)
+	      (cond
+	       ((and (= (fn 'val) 1) (= x (fn 'x)))
+		(format #t "--- caught ! ~%"))
+	       (#t
+		(format #t "~%")))
+	      (fn 'next)
+	      (set! x (+ x 1))
+	      (set! t (+ t 1))))))
 
 
 
 
-
-
-    
-	 
-	 
-
-
-
-
-
-
-
-
-   
-   
-  
-
+	    
+;;(for-depth 3)
