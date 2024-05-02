@@ -403,24 +403,35 @@ ACCEPTED ANSWER !
 
 
 ;; 128 x 128 only
-(define (to-grid in)
-  (let ((xs (map viz (rows in)))
+(define (rows-to-grid rows)
+  (let ((xs (map viz rows))
 	(hash (make-hash-table))
 	(x 0)
-	(y 0)) 
+	(y 0))
+    ;; (format #t "~%~%")
+    ;; (pp xs)
+    ;; (format #t "~%")
     (assert (= 128 (length xs)))
     (let ((tot 0))
+      (set! y 0)
       (dolist (s xs)
 	      (assert (= 128 (string-length s)))
+	      (set! x 0)
 	      (dostring (c s)
 			(cond 
 			 ((char=? c #\# )
 			  (incf tot)
-			  (hash-table-set! hash (list x y) 0))
-			 (#t (hash-table-set! hash (list x y) #f)))
+			  ;;(format #t "setting ~a ~a => ~a ~%" x y 1)
+			  (hash-table-set! hash (list x y) #t)
+			  (assert (eq? #t (hash-table-ref hash (list x y))))
+			  )
+			 (#t 
+			  (hash-table-set! hash (list x y) #f)
+			  (assert (eq? #f (hash-table-ref hash (list x y))))))
 			(incf x))
 	      (incf y))
-      (values hash tot))))
+      hash)))
+
 
 
 #|
@@ -438,51 +449,107 @@ if hash h has entry - meaning bit set in puzzle , then it should have a value if
 		     (dolist (y (iota 128))
 			     (let ((val (hash-table-ref/default h (list x y) #f)))
 			       (cond
-				((and val (not (integer? val)))
-				 (exit (values #f (list x y)))))))))))
+				((and val (eq? val #t))
+				 (exit #f))))))
+	     #t)))
+
+
+
+#|
+
+forgot #t in all-painted after dolist so it would say #f if grid was fully painted or not !
+
+(define (all-painted-check h)
+  (format #t "painting checker ... ")
+  (call/cc (lambda (exit)
+	     (dolist (x (iota 128))
+		     (dolist (y (iota 128))
+			     (let ((val (hash-table-ref/default h (list x y) #f)))
+			       (cond
+				((and val (eq? val #t))
+				 (format #t "val true at index ~a , ~a ~%" x y)
+				 (exit #f))))))
+	     #t)))
+
+
+|#
+
 
 
 (define (on-board? x y)
   (and (>= x 0)(< x 128)(>= y 0)(< y 128)))
 
 
-(define (paint-region h p x y)
+(define (paint-region hg p x y)
   (cond
    ((not (on-board? x y)) #f)
-   (#t (let ((val (hash-table-ref/default h (list x y) #f)))
+   (#t (let ((val (hash-table-ref/default hg (list x y) #f)))
 	 (cond
-	  ((integer? val)
-	   (cond
-	    ((= val 0) ;; can paint this
-	     (hash-table-set! h (list x y) p)
-	     (format #t "painted ~a ~a with colour ~a ~%" x y p)
-	     (paint-region h p (+ x 1) y)
-	     (paint-region h p (- x 1) y)
-	     (paint-region h p x (+ y 1))
-	     (paint-region h p x (- y 1))))))))))
+	  ((eq? val #t)  ;; can paint this
+	   (hash-table-set! hg (list x y) p)
+	   (format #t "painted ~a ~a with colour ~a ~%" x y p)
+	   (paint-region hg p (+ x 1) y)
+	   (paint-region hg p (- x 1) y)
+	   (paint-region hg p x (+ y 1))
+	   (paint-region hg p x (- y 1))))))))
 
 
+(define (viz-grid hg)
+  (let ((iot (iota 128)))
+    (format #t "~%~%")
+    (dolist (y iot)
+	    (dolist (x iot)
+		    (let ((val (hash-table-ref/default hg (list x y) #f)))
+		      (cond
+		       (val (format #t "~a" val))
+		       (#t (format #t ".")))))
+	    (format #t "~%"))
+    (format #t "~%")))
+  
 
+(define (viz-fill-grid hg)
+  (let ((iot (iota 128)))
+    (dolist (y iot)
+	    (dolist (x iot)
+		    (hash-table-set! hg (list x y) 1)))))
+  
 
-(define (paint-regions h)
+(define (paint-regions hg)
   (let ((n-regions 0))
-    (letrec ((foo (lambda ()
-		    (cond
-		     ((all-painted? h) n-regions)
-		     (#t
-		      (set! n-regions (+ n-regions 1))
-		      (format #t "painting region ~a ~%" n-regions)
-		      (call/cc (lambda (exit)
-				 (dolist (x (iota 128))
-					 (dolist (y (iota 128))
-						 (let ((val (hash-table-ref/default h (list x y) #f)))
-						   (cond
-						    ((and val (not (integer? val)))
-						     (paint-region h n-regions x y)
-						     (exit #t))))))))
-		      (foo)
-		      )))))
-      (foo))))
+    (call/cc (lambda (exit)
+	       (letrec ((foo (lambda ()
+			       (cond
+				((all-painted? hg) n-regions)
+				(#t
+				 (let ((iot (iota 128)))
+				   (dolist (x iot)
+					   (dolist (y iot)
+						   (let ((val (hash-table-ref/default hg (list x y) #f)))
+						     (cond
+						      ((and val (eq? val #t))
+						       (set! n-regions (+ n-regions 1))
+						       (format #t "painting region ~a ~%" n-regions)
+						       (paint-region hg n-regions x y))))))
+
+				   ;; (when (= n-regions 1242)
+				   ;;   (viz-grid hg)
+				   ;;   (format #t "all painted then ? ~a~%" (all-painted? hg))
+				   ;;   (all-painted-check hg)
+
+				   ;;   (exit (all-painted? hg))
+				   ;;   )
+
+				   ;; (format #t "all painted then ? ~a~%" (all-painted? hg))
+				   ;;(viz-grid hg)
+				   (foo)))))))
+		 (foo))))
+    n-regions))
+
+
+
+
+
+
 
 
 
@@ -490,14 +557,44 @@ if hash h has entry - meaning bit set in puzzle , then it should have a value if
 (define (paint h)  (paint-regions h))
 
 
-(let ((g (to-grid *test*)))
-  (format #t "computed grid ~%")
-  (pp g)
-  (format #t "~%painting ... ~%")
-  (format #t "~a~%" (paint g)))
+(define (puzzle in)
+  (let ((g (rows in)))
+    (format #t "computed grid ~%")  
+    (pp g)
+    (let ((hg (rows-to-grid g)))
+      (format #t "computed hash grid ~%")  
+      (pp hg)
+      (format #t "~%~%")
+      (viz-grid hg)
+      (let ((result (paint hg)))
+	(format #t "~%~%number of painted regions ~a ~%" result)))))
+
+  ;; (format #t "~%painting ... ~%")
+  ;; (format #t "~a~%" (paint g)))
+;;(viz-grid (to-grid (rows *test*)))
+
+
+(puzzle *test*)
+
+(puzzle *input*)
+
+#|
+painting region 1128 
+painted 127 121 with colour 1128 
+painted 127 122 with colour 1128 
+painted 127 123 with colour 1128 
+
+
+number of painted regions 1128 
+
+ ACCEPTED ANSWER ! 
+
+ SOLVED PART B
 
 
 
+
+|#
 
 
 
