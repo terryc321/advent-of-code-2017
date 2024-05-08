@@ -31,177 +31,117 @@
 (import matchable)
 (define pp pretty-print)
 
-#|
 
+#|
+;; ---------------------------------------------------------------------------------
+
+             [ 0 -> ] 
+
+50000000
 
 |#
-(define limit #f)
-(define initial-size #f)
-(define current #f)
-(define vec #f)
-(define counter #f)
-(define last #f)
+
+(define (make-item x n)
+  (let ((vec (make-vector 2)))
+    (vector-set! vec 0 x)
+    (vector-set! vec 1 n)
+    vec))
+
+(define (next v)
+  (vector-ref v 1))
+
+(define (init)
+  (let ((v (make-item 0 0)))
+    (vector-set! v 1 v)
+    v))
+
+(define (insert x v k)
+  (cond
+   ((> k 0) (insert x (next v) (- k 1)))
+   (#t 
+    (let ((new (make-item x 0))
+	  (old-next (vector-ref v 1)))    
+      (vector-set! v 1 new)
+      (vector-set! new 1 old-next)
+      new))))
+
+(define p (init))
+(define n 1)
+(define cur p)
 
 (define (reset)
-  (set! last 0) ;; dummy last value
-  (set! limit 0)
-  (set! initial-size 1000000)
-  (set! current 0)
-  (set! vec (make-vector initial-size 0))
-  (set! counter 0))
+  (set! p (init))
+  (set! cur p)
+  (set! n 1))
+
+(define (go)
+  (set! cur (insert n cur 3))
+  (set! n (+ n 1))
+  p)
+
+(define (go2)
+  (set! cur (insert n cur 303))
+  (set! n (+ n 1))
+  p)
 
 
-(define (show-few)
-  ;; show few items from 0 to limit
-  (do-for i (0 2)
-	  (cond
-	   ((= i current)
-	    (format #t "(~a) " (vector-ref vec i)))
-	   (#t (format #t "~a " (vector-ref vec i)))))
-  (format #t "~%"))
+(define (ffind)
+  (letrec ((foo (lambda (r)
+		  (cond
+		   ((> n 2017) #t)
+		   (#t (go2)
+		       (foo (+ r 1)))))))
+    (foo 1)))
 
 
 (define (show)
-  ;; show all items from 0 to limit
-  (do-for i (0 (+ 1 limit))
-	  (cond
-	   ((= i current)
-	    (format #t "(~a) " (vector-ref vec i)))
-	   (#t (format #t "~a " (vector-ref vec i)))))
-  (format #t "~%"))
-
-(define (next-i n)
-  (cond
-   ((<= n 0) #f)
-   (#t
-    (set! current (+ 1 current))
-    (when (> current limit)
-      (set! current 0))
-    (next-i (- n 1)))))
+  (letrec ((foo (lambda (v r)
+		  (cond
+		   ((and (> r 0) (= (vector-ref v 0) 0)) #f)
+		   (#t (format #t "~a " (vector-ref v 0))
+		       (foo (next v) (+ r 1)))))))
+    (foo p 0)))
 
 
-(define (next)
-  (set! current (+ 1 current))
-  (when (> current limit)
-    (set! current 0)))
-
-;; when does vector become too small ?
-(define (bump a b)
-  (define (loop lo hi)
-    (cond
-     ((< hi lo) #t)
-     (#t
-      (vector-set! vec (+ hi 1) (vector-ref vec hi))
-      (loop lo (- hi 1)))))
-  (loop a b))    
-
-(define (insert)
-  ;; move all items [ current + 1 ] to [ limit ] inclusive up by 1
-  (bump (+ 1 current) limit)
-  ;; increment limit
-  (set! limit (+ 1 limit))
-  ;; increment counter
-  (set! counter (+ 1 counter))
-  ;;(format #t "inserting counter [~a] at offset [~a]~%" counter (+ current 1))
-  ;; set value at current + 1
-  (vector-set! vec (+ 1 current) counter)
-  ;; bump current
-  (set! current (+ 1 current))
-  )
-
-  ;; ;; check largest is counter
-  ;; (check-largest counter))
-  
-
-(define (check-largest c)
-  (define (loop lo hi)
-    (cond
-     ((< hi lo) #t)
-     (#t
-      (let ((val (vector-ref vec hi)))
-	(cond
-	 ((> val c) (format #t "violation at offset [~a] has value [~a] : largest expected [~a] ~%"
-			    hi val c)
-	  (error "check-largest")))
-	(loop lo (- hi 1))))))
-  (loop 0 limit))
-
-
-(define (forever n)
-  (cond
-   ((>= n 2017) (show))
-   (#t 
-    ;;(show)
-    ;;(next)(next)(next)
-    (next-i 3)
-    (insert)
-    (forever (+ n 1)))))
-
-(define (test)
-  (reset)
-  (forever 0))
-
-;; next 303 times , insert , repeat 2017 times
-(define (run-1 n)
-  (cond
-   ((>= n 2017) (show))
-   (#t 
-    ;;(show)
-    ;;(next)(next)(next)
-    (next-i 303)
-    (insert)
-    (run-1 (+ n 1)))))
-
-(define (run)
-  (reset)
-  (run-1 0))
-
-
-
-(define (run-2 n lim)
-  #|
-  (let ((val (vector-ref vec 1)))
-    (when (not (= val last))
-      (set! last val)
-      (format #t "n = ~a : few = " n) (show-few) (format #t " ~%")))
-  |#
-  ;;(format #t "n = ~a ~%" n )
-  ;;(when (= 0 (modulo n 10000)) (format #t "mod n 10,000= ~a ~%" n))
-  
-  (when (= 0 (modulo n 10000)) 
-    (format #t "n = ~a : few = " n) (show-few) (format #t " ~%"))
-  
-  ;;(when (= 0 (modulo n 10000)) (format #t "every 100's n = ~a ~%" n))
-  (cond
-   ((>= n lim) (show))
-   (#t 
-    ;;(show)
-    ;;(next)(next)(next)
-    (next-i 303)
-    (insert)
-    (run-2 (+ n 1) lim))))
-
-(define (run2)
-  (reset)
-  (run-2 0 50000000))
-
-;;(run2)
+(define (show-10)
+  (letrec ((foo (lambda (v r)
+		  (cond
+		   ((or (> r 10) (and (> r 0) (= (vector-ref v 0) 0))) #f)
+		   (#t (format #t "~a " (vector-ref v 0))
+		       (foo (next v) (+ r 1)))))))
+    (foo p 0)))
 
 
 #|
 
-(run)
+repeatedly do this 50 - million times
+if n > 50 - million then it has been inserted already 
+|#
+(define (ffind2)
+  (letrec ((foo (lambda (r)
+		  (cond
+		   ((= (modulo n 1000000) 0)
+		    (format #t "n = ~a ~%" n )))
+		  (cond
+		   ((> n 50000000) #t)
+		   (#t (go2)
+		       (foo (+ r 1)))))))
+    (foo 1)))
 
-... 456 242 32 (2017) 1971 178 ...
 
-1971 accepted answer .
+(ffind2)
+(show-10)
 
 
------- part 2 ---- huh ??
+#|
 
-when is 303 a multiple of size of length of list ?
-is this even the correct wording ??
+n = 49000000 
+n = 50000000 
+0 17202899 32278554 10221408 48728547 37934195 31751138 34025879 5611473 23603333 17720674
+
+17202899
+
+ANSWER ACCEPTED ! 
 
 
 |#
-
