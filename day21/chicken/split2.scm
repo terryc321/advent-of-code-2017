@@ -1,39 +1,18 @@
 
 #|
+split.scm
 
-t0 has length 9 - so is (sqrt 9) a 3 x 3 matrix
-.#.
-..#
-###
-
-t1 has length 16 - so is a 4 x 4 matrix
-...#
-##.#
-#..#
-.#..
-
-
+split vec2d into sub vec2d 's such we can then do
+ £ (map-lookup vec input-map)
 
 |#
 
-(define t0 '(0 1 0 0 0 1 1 1 1))
-(define t1 '(0 0 0 1 1 1 0 1 1 0 0 1 0 1 0 0))
+;; all vec2d should be square no ?
+(define (vec2d-size s)
+  (vector-length s))
 
-;; group t1 into lots of 4
-(define t2 (let* ((size (sqrt (length t1)))
-		  (tmp1 (group-by t1 size)))
-	     tmp1))
-
-;; ---------
-
-
-(define (group-by gs n)
-  (letrec ((foo (lambda (xs ys)
-		  (cond
-		   ((null? xs) (reverse ys))
-		   (#t (foo (drop xs n) (cons (take xs n) ys)))))))
-    (foo gs '())))
-
+(define (split-vec2d s)
+  s)
 
 #|
 '((0 1 2 3) (4 5 6 7) (8 9 10 11) (12 13 14 15))
@@ -81,8 +60,6 @@ into sub grids
 			    (cons (append (take as 2) (take bs 2)) cs)))))))
       (foo (car xs) (cadr xs) '()))))
 
-;;----------------------------------
-
 ;; split grid into grids of 2 x 2
 (define (split-grid2 xs)
   (let* ((size (length (car xs)))
@@ -121,11 +98,10 @@ into sub grids
 
 
 
-(define (split-grid xs)
-  (let ((len (length xs)))    
-    (cond
-     ((= 0 (modulo len 2)) (split-grid2 xs))
-     ((= 0 (modulo len 3)) (split-grid3 xs))
-     (#t (error "split-grid")))))
-     
+
+
+
+
+
+
 

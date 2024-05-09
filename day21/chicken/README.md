@@ -1,10 +1,44 @@
 
 # day21 
 
+## latest
+
+```lisp 
+split.scm  - need to program splitting of matrix into 2x2 , into 3x3 , 
+
+finding mappings in input-map -- seems to be ok
+
+version-1.scm need to put correct code from split.scm into version-1.scm
+
+then done ??
+huh
+
+```
+
+
+
 ```scheme
 main.scm - entry point
 prelude.scm - chicken prelude 
 
+```
+
+
+## redundant and confusing mapping
+
+```lisp
+ ;; from                  to 
+(((1 1 1 1 1 1 1 1 1) (1 0 1 1 1 1 0 0 1 0 1 0 0 0 0 0))
+ ((1 1 1 1 1 1 1 1 1) (1 0 0 0 1 0 1 0 0 1 0 0 1 1 1 0))
+ ((1 1 1 1 1 1 1 1 1) (0 0 0 0 0 1 0 1 0 0 1 1 1 1 0 1))
+ ((1 1 1 1 1 1 1 1 1) (0 1 1 1 0 0 1 0 0 1 0 1 0 0 0 1))
+ ((1 1 1 1 1 1 1 1 1) (1 1 1 0 0 1 0 0 1 0 1 0 1 0 0 0))
+ ((1 1 1 1 1 1 1 1 1) (0 0 0 0 1 0 1 0 1 1 0 0 1 0 1 1))
+ ((1 1 1 1 1 1 1 1 1) (0 0 0 1 0 1 0 1 0 0 1 0 0 1 1 1))
+ ((1 1 1 1 1 1 1 1 1) (1 1 0 1 0 0 1 1 0 1 0 1 0 0 0 0))
+ ((1 1 1 1 0 1 1 1 1) (0 1 0 0 0 1 0 0 0 1 0 0 1 1 0 0))
+ 
+;; which mapping should all 1's choose ? 
 ```
 
 ## relax and use lisp lists 

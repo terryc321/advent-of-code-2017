@@ -186,7 +186,7 @@ OR 3 x 3 matrix , so we can remove / slash
     (dolist (pr m)
 	    (let* ((from (car pr))
 		   (to (cadr pr))
-		   (possible (rotate-flip-permute from)))
+		   (possible (rotate-flip-permute from to)))
 	      (dolist (p possible)
 		      (set! result (cons (list p to) result)))))
      result))
@@ -196,16 +196,16 @@ OR 3 x 3 matrix , so we can remove / slash
 (set! input-map (extend-map input-map))
 (set! example-map (extend-map example-map))
 
-;; convert lists to vec2d
-(define (convert-map-to-vec2d m)
-  (map (lambda (pr)
-	 (let* ((from (list->vec2d (car pr)))
-		(to (list->vec2d (cadr pr))))
-	   (list from to)))
-       m))
 
+;; ;; convert lists to vec2d
+;; (define (convert-map-to-vec2d m)
+;;   (map (lambda (pr)
+;; 	 (let* ((from (list->vec2d (car pr)))
+;; 		(to (list->vec2d (cadr pr))))
+;; 	   (list from to)))
+;;        m))
 
-(set! input-map (convert-map-to-vec2d (extend-map input-map)))
-(set! example-map (convert-map-to-vec2d (extend-map example-map)))
+;; (set! input-map (convert-map-to-vec2d (extend-map input-map)))
+;; (set! example-map (convert-map-to-vec2d (extend-map example-map)))
 
 
