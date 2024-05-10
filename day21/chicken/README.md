@@ -1,7 +1,7 @@
 
 # day21 
 
-## flatten sub matrices to single matrix
+## flatten 
 
 ```lisp
 (define p1
@@ -27,6 +27,29 @@
 
 > (flat p1)
 ((1 2 5 6) (3 4 7 8) (9 10 13 14) (11 12 15 16)) 
+```
+
+```maxima
+a : matrix([1,2],[3,4]);
+b : matrix([5,6],[7,8]);
+c : matrix([9,10],[11,12]);
+d : matrix([13,14],[15,16]);
+m : matrix([a,b],[c,d]);
+
+matrix m                        [  [ 1  2 ]    [ 5  6 ]  ]
+                                [  [      ]    [      ]  ]
+                                [  [ 3  4 ]    [ 7  8 ]  ]
+                                [                        ]
+                                [ [ 9   10 ]  [ 13  14 ] ]
+                                [ [        ]  [        ] ]
+                                [ [ 11  12 ]  [ 15  16 ] ]
+
+
+flatten                         [  1   2   5   6  ]
+                                [  3   4   7   8  ]
+                                [  9  10  13  14  ] 
+                                [ 11  12  15  16  ] 
+
 ```
 
 ## latest
