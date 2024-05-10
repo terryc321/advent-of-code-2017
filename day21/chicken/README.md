@@ -1,6 +1,34 @@
 
 # day21 
 
+## flatten sub matrices to single matrix
+
+```lisp
+(define p1
+  (let ((a '((1 2)(3 4)))
+	(b '((5 6)(7 8)))
+	(c '((9 10)(11 12)))
+	(d '((13 14)(15 16)))
+	)
+    `((,a ,b)(,c ,d))))
+
+(define (flat m)
+  (let ((f (lambda (c)
+	     (let ((size (length (car c))))
+	       (map (lambda (i)
+		      (apply append (map (lambda (z) (list-ref z i)) c)))
+		    (iota size))))))
+    (apply append (map f m))))
+```
+
+```lisp
+> p1
+((((1 2) (3 4)) ((5 6) (7 8))) (((9 10) (11 12)) ((13 14) (15 16))))
+
+> (flat p1)
+((1 2 5 6) (3 4 7 8) (9 10 13 14) (11 12 15 16)) 
+```
+
 ## latest
 
 ```lisp 
