@@ -1,0 +1,63 @@
+
+;; mit-scheme seems to lack a macro expander
+;; but chicken scheme does have a full macro expander also uses er-macro-transformer
+
+#|
+(define-syntax while
+  (er-macro-transformer
+   (lambda (x r c)
+     (let ((test (cadr x))
+           (body (cddr x)))
+       `(,(r 'loop)
+         (,(r 'if) (,(r 'not) ,test) (exit #f))
+         ,@body)))))
+
+
+(define-syntax while
+  (er-macro-transformer
+   (lambda (x r c)
+     (let ((test (cadr x))
+           (body (cddr x)))
+       `(,(r 'loop)
+         (,(r 'if) (,(r 'not) ,test) (exit #f))
+         ,@body)))))
+
+
+(define (swap a b)
+  (let ((tmp a))
+    (set! a b)
+    (set! b tmp)))
+
+racket has syntax-case
+
+** chicken scheme **
+(import (expand-full))
+(import (chicken format))
+(import (chicken pretty-print))
+;; ppexpand*
+
+
+
+
+er-macro-transformer
+
+x expression
+r rename
+c compare
+|#
+
+(define-syntax swap!
+  (er-macro-transformer
+   (lambda (x r c)
+     (let ((a (cadr x))
+     	   (b (caddr x))
+	   (%begin (r 'begin))
+	   (%let (r 'let))
+	   (%set! (r 'set!))
+	   (tmp (gensym "tmp")))
+       `(,%begin
+	 (,%let ((,tmp a))
+	  (,%set! a b)
+	  (,%set! b ,tmp)))))))
+
+
